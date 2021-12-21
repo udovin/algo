@@ -116,3 +116,34 @@ func TestSimpleIntMap(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkSimpleIntMapSeqInsert(b *testing.B) {
+	m := NewMap[int, int](intLess)
+	for i := 0; i < b.N; i++ {
+		m.Insert(i, i)
+	}
+}
+
+func BenchmarkSimpleIntMapSeqFind(b *testing.B) {
+	m := NewMap[int, int](intLess)
+	for i := 0; i < b.N; i++ {
+		m.Insert(i, i)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if it := m.Find(i); it == nil {
+			b.Fatalf("Unable to find key = %d", i)
+		}
+	}
+}
+
+func BenchmarkSimpleIntMapSeqErase(b *testing.B) {
+	m := NewMap[int, int](intLess)
+	for i := 0; i < b.N; i++ {
+		m.Insert(i, i)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Erase(m.Find(i))
+	}
+}
