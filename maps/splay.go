@@ -95,25 +95,24 @@ func NewsplayTree[K, V any](less func(K, K) bool) *splayTree[K, V] {
 	return &splayTree[K, V]{less: less}
 }
 
-// split splits splayTree into two splayTrees by key.
+// split splits splay tree into two parts by key.
 //
-// Current splayTree will have values < key.
-// New splayTree will have values >= key.
-func (t *splayTree[K, V]) split(key K) *splayTree[K, V] {
+// Current tree will have values < key.
+// New part will have values >= key.
+func (t *splayTree[K, V]) split(key K) *splayNode[K, V] {
 	n := t.lowerBound(key)
 	if n == nil {
-		return &splayTree[K, V]{less: t.less}
+		return nil
 	}
 	t.root = n.left
 	if n.left != nil {
 		n.left.parent = nil
 		n.left = nil
 	}
-	return &splayTree[K, V]{less: t.less, root: n}
+	return n
 }
 
-func (t *splayTree[K, V]) merge(r *splayTree[K, V]) {
-	n := r.root
+func (t *splayTree[K, V]) merge(n *splayNode[K, V]) {
 	if n == nil {
 		return
 	}
@@ -125,13 +124,13 @@ func (t *splayTree[K, V]) merge(r *splayTree[K, V]) {
 	if n.left != nil {
 		n.left.parent = n
 	}
-	t.root, r.root = n, nil
+	t.root = n
 }
 
 func (t *splayTree[K, V]) insert(key K, value V) *splayNode[K, V] {
 	n := &splayNode[K, V]{key: key, value: value}
 	r := t.split(key)
-	n.left, n.right = t.root, r.root
+	n.left, n.right = t.root, r
 	if n.left != nil {
 		n.left.parent = n
 	}
@@ -149,11 +148,11 @@ func (t *splayTree[K, V]) erase(n *splayNode[K, V]) {
 	if t.root != nil {
 		t.root.parent = nil
 	}
-	r := splayTree[K, V]{less: t.less, root: n.right}
-	if r.root != nil {
-		r.root.parent = nil
+	r := n.right
+	if r != nil {
+		r.parent = nil
 	}
-	t.merge(&r)
+	t.merge(r)
 	t.len--
 }
 
