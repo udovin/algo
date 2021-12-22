@@ -1,6 +1,7 @@
 package maps
 
 import (
+	"math/rand"
 	"testing"
 )
 
@@ -145,5 +146,40 @@ func BenchmarkSimpleIntMapSeqErase(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		m.Erase(m.Find(i))
+	}
+}
+
+func BenchmarkSimpleIntMapInsert(b *testing.B) {
+	rnd := rand.New(rand.NewSource(42))
+	b.ResetTimer()
+	m := NewMap[int, int](intLess)
+	for i := 0; i < b.N; i++ {
+		m.Insert(rnd.Int(), rnd.Int())
+	}
+}
+
+func BenchmarkSimpleIntMapFind(b *testing.B) {
+	m := NewMap[int, int](intLess)
+	for i := 0; i < b.N; i++ {
+		m.Insert(i, i)
+	}
+	rnd := rand.New(rand.NewSource(42))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if it := m.Find(rnd.Intn(b.N)); it == nil {
+			b.Fatalf("Unable to find key = %d", i)
+		}
+	}
+}
+
+func BenchmarkSimpleIntMapErase(b *testing.B) {
+	m := NewMap[int, int](intLess)
+	for i := 0; i < b.N; i++ {
+		m.Insert(i, i)
+	}
+	rnd := rand.New(rand.NewSource(42))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Erase(m.Find(rnd.Intn(b.N)))
 	}
 }
