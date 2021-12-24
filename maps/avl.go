@@ -196,7 +196,7 @@ func (t *avlTree[K, V]) rebalance(n *avlNode[K, V]) {
 	t.root = n
 }
 
-func (t *avlTree[K, V]) erase(n *avlNode[K, V])  {
+func (t *avlTree[K, V]) erase(n *avlNode[K, V]) {
 	if n.left == nil && n.right == nil {
 		if n.parent == nil {
 			t.root = nil
