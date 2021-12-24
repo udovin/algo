@@ -16,8 +16,8 @@ func TestSimpleIntMap(t *testing.T) {
 	}
 	for i := 0; i < 16; i++ {
 		m.Insert(i, i)
-		if v := m.Len(); v != i + 1 {
-			t.Fatalf("Expected len = %d, got %d", i + 1, v)
+		if v := m.Len(); v != i+1 {
+			t.Fatalf("Expected len = %d, got %d", i+1, v)
 		}
 	}
 	for i := 0; i < 16; i++ {
@@ -40,8 +40,8 @@ func TestSimpleIntMap(t *testing.T) {
 	{
 		c := m.Clone()
 		for i := 0; i < 16; i++ {
-			c.Set(i, i * i)
-			if v, ok := c.Get(i); !ok || v != i * i {
+			c.Set(i, i*i)
+			if v, ok := c.Get(i); !ok || v != i*i {
 				t.Fatalf("Invalid value: %d", v)
 			}
 		}
@@ -52,7 +52,7 @@ func TestSimpleIntMap(t *testing.T) {
 			t.Fatalf("Expected len = %d, got %d", 0, v)
 		}
 	}
- 	if it := m.Front(); it == nil {
+	if it := m.Front(); it == nil {
 		t.Fatalf("Expected non empty value")
 	} else {
 		if v := it.Key(); v != 0 {
@@ -71,8 +71,8 @@ func TestSimpleIntMap(t *testing.T) {
 		cnt := 0
 		for it := m.Front(); it != nil; it = it.Next() {
 			cnt++
-			if v := it.Key(); v != prev + 1 {
-				t.Fatalf("Key out of order: %d != %d", v, prev + 1)
+			if v := it.Key(); v != prev+1 {
+				t.Fatalf("Key out of order: %d != %d", v, prev+1)
 			}
 			prev = it.Key()
 		}
@@ -85,8 +85,8 @@ func TestSimpleIntMap(t *testing.T) {
 		cnt := 0
 		for it := m.Back(); it != nil; it = it.Prev() {
 			cnt++
-			if v := it.Key(); v != prev - 1 {
-				t.Fatalf("Key out of order: %d != %d", v, prev - 1)
+			if v := it.Key(); v != prev-1 {
+				t.Fatalf("Key out of order: %d != %d", v, prev-1)
 			}
 			prev = it.Key()
 		}
@@ -145,7 +145,11 @@ func BenchmarkSimpleIntMapSeqErase(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		m.Erase(m.Find(i))
+		it := m.Find(i)
+		if it == nil {
+			b.Fatalf("Unable to find key = %d", i)
+		}
+		m.Erase(it)
 	}
 }
 
@@ -153,8 +157,9 @@ func BenchmarkSimpleIntMapInsert(b *testing.B) {
 	rnd := rand.New(rand.NewSource(42))
 	b.ResetTimer()
 	m := NewMap[int, int](intLess)
+	p := rnd.Perm(b.N)
 	for i := 0; i < b.N; i++ {
-		m.Insert(rnd.Int(), rnd.Int())
+		m.Insert(p[i], i)
 	}
 }
 
@@ -165,9 +170,10 @@ func BenchmarkSimpleIntMapFind(b *testing.B) {
 	}
 	rnd := rand.New(rand.NewSource(42))
 	b.ResetTimer()
+	p := rnd.Perm(b.N)
 	for i := 0; i < b.N; i++ {
-		if it := m.Find(rnd.Intn(b.N)); it == nil {
-			b.Fatalf("Unable to find key = %d", i)
+		if it := m.Find(p[i]); it == nil {
+			b.Fatalf("Unable to find key = %d", p[i])
 		}
 	}
 }
@@ -179,7 +185,12 @@ func BenchmarkSimpleIntMapErase(b *testing.B) {
 	}
 	rnd := rand.New(rand.NewSource(42))
 	b.ResetTimer()
+	p := rnd.Perm(b.N)
 	for i := 0; i < b.N; i++ {
-		m.Erase(m.Find(rnd.Intn(b.N)))
+		it := m.Find(p[i])
+		if it == nil {
+			b.Fatalf("Unable to find key = %d", p[i])
+		}
+		m.Erase(it)
 	}
 }
