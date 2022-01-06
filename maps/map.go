@@ -48,8 +48,8 @@ type Map[K, V any] struct {
 //
 // If there is no such node, ok will be false.
 func (m *Map[K, V]) Get(key K) (value V, ok bool) {
-	if it := m.Find(key); it != nil {
-		value = it.Value()
+	if it := m.m.find(key); it != nil {
+		value = it.value
 		ok = true
 	}
 	return
@@ -57,17 +57,17 @@ func (m *Map[K, V]) Get(key K) (value V, ok bool) {
 
 // Set updates value by specified key.
 func (m *Map[K, V]) Set(key K, value V) {
-	if it := m.Find(key); it != nil {
-		it.SetValue(value)
+	if it := m.m.find(key); it != nil {
+		it.value = value
 		return
 	}
-	m.Insert(key, value)
+	m.m.insert(key, value)
 }
 
 // Unset removes specified key.
 func (m *Map[K, V]) Unset(key K) {
-	if it := m.Find(key); it != nil {
-		m.Erase(it)
+	if it := m.m.find(key); it != nil {
+		m.m.erase(it)
 	}
 }
 
