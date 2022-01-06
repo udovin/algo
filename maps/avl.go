@@ -9,7 +9,7 @@ type avlNode[K, V any] struct {
 	parent *avlNode[K, V]
 }
 
-func (n *avlNode[K, V]) next() *avlNode[K, V] {
+func (n *avlNode[K, V]) Next() *avlNode[K, V] {
 	if n.right != nil {
 		next := n.right
 		for next.left != nil {
@@ -24,7 +24,7 @@ func (n *avlNode[K, V]) next() *avlNode[K, V] {
 	return next.parent
 }
 
-func (n *avlNode[K, V]) prev() *avlNode[K, V] {
+func (n *avlNode[K, V]) Prev() *avlNode[K, V] {
 	if n.left != nil {
 		next := n.left
 		for next.right != nil {
@@ -143,7 +143,7 @@ type avlTree[K, V any] struct {
 	len  int
 }
 
-func (t *avlTree[K, V]) insert(key K, value V) *avlNode[K, V] {
+func (t *avlTree[K, V]) Insert(key K, value V) *avlNode[K, V] {
 	n := avlNode[K, V]{key: key, value: value, height: 1}
 	if t.root == nil {
 		t.root = &n
@@ -196,7 +196,7 @@ func (t *avlTree[K, V]) rebalance(n *avlNode[K, V]) {
 	t.root = n
 }
 
-func (t *avlTree[K, V]) erase(n *avlNode[K, V]) {
+func (t *avlTree[K, V]) Erase(n *avlNode[K, V]) {
 	if n.left == nil && n.right == nil {
 		if n.parent == nil {
 			t.root = nil
@@ -305,15 +305,15 @@ func (t *avlTree[K, V]) erase(n *avlNode[K, V]) {
 	n.parent = nil
 }
 
-func (t *avlTree[K, V]) find(key K) *avlNode[K, V] {
-	n := t.lowerBound(key)
+func (t *avlTree[K, V]) Find(key K) *avlNode[K, V] {
+	n := t.LowerBound(key)
 	if n == nil || t.less(key, n.key) {
 		return nil
 	}
 	return n
 }
 
-func (t *avlTree[K, V]) lowerBound(key K) (n *avlNode[K, V]) {
+func (t *avlTree[K, V]) LowerBound(key K) (n *avlNode[K, V]) {
 	for it := t.root; it != nil; {
 		if t.less(it.key, key) {
 			it = it.right
@@ -325,7 +325,7 @@ func (t *avlTree[K, V]) lowerBound(key K) (n *avlNode[K, V]) {
 	return
 }
 
-func (t *avlTree[K, V]) front() *avlNode[K, V] {
+func (t *avlTree[K, V]) Front() *avlNode[K, V] {
 	if t.root == nil {
 		return nil
 	}
@@ -336,7 +336,7 @@ func (t *avlTree[K, V]) front() *avlNode[K, V] {
 	return it
 }
 
-func (t *avlTree[K, V]) back() *avlNode[K, V] {
+func (t *avlTree[K, V]) Back() *avlNode[K, V] {
 	if t.root == nil {
 		return nil
 	}
@@ -347,7 +347,7 @@ func (t *avlTree[K, V]) back() *avlNode[K, V] {
 	return it
 }
 
-func (t *avlTree[K, V]) clone() *avlTree[K, V] {
+func (t *avlTree[K, V]) Clone() *avlTree[K, V] {
 	c := avlTree[K, V]{
 		less: t.less,
 		len:  t.len,

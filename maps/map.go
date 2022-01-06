@@ -25,14 +25,14 @@ func (n *Node[K, V]) SetValue(value V) {
 //
 // If current node is the last, Next will return nil.
 func (n *Node[K, V]) Next() *Node[K, V] {
-	return n.m.wrapNode(n.n.next())
+	return n.m.wrapNode(n.n.Next())
 }
 
 // Prev returns prevuous node.
 //
 // If current node is the first, Prev will return nil.
 func (n *Node[K, V]) Prev() *Node[K, V] {
-	return n.m.wrapNode(n.n.prev())
+	return n.m.wrapNode(n.n.Prev())
 }
 
 // Map represents ordered map data structure.
@@ -48,7 +48,7 @@ type Map[K, V any] struct {
 //
 // If there is no such node, ok will be false.
 func (m *Map[K, V]) Get(key K) (value V, ok bool) {
-	if it := m.m.find(key); it != nil {
+	if it := m.m.Find(key); it != nil {
 		value = it.value
 		ok = true
 	}
@@ -57,22 +57,22 @@ func (m *Map[K, V]) Get(key K) (value V, ok bool) {
 
 // Set updates value by specified key.
 func (m *Map[K, V]) Set(key K, value V) {
-	if it := m.m.find(key); it != nil {
+	if it := m.m.Find(key); it != nil {
 		it.value = value
 		return
 	}
-	m.m.insert(key, value)
+	m.m.Insert(key, value)
 }
 
 // Unset removes specified key.
 func (m *Map[K, V]) Unset(key K) {
-	if it := m.m.find(key); it != nil {
-		m.m.erase(it)
+	if it := m.m.Find(key); it != nil {
+		m.m.Erase(it)
 	}
 }
 
 func (m *Map[K, V]) Insert(key K, value V) *Node[K, V] {
-	return m.wrapNode(m.m.insert(key, value))
+	return m.wrapNode(m.m.Insert(key, value))
 }
 
 func (m *Map[K, V]) Erase(it *Node[K, V]) {
@@ -80,35 +80,35 @@ func (m *Map[K, V]) Erase(it *Node[K, V]) {
 		panic("unable to remove invalid node")
 	}
 	it.m = nil
-	m.m.erase(it.n)
+	m.m.Erase(it.n)
 }
 
 // Find finds node with specified key.
 //
 // It is safe to access nodes concurently.
 func (m *Map[K, V]) Find(key K) *Node[K, V] {
-	return m.wrapNode(m.m.find(key))
+	return m.wrapNode(m.m.Find(key))
 }
 
 // Front returns first element of map.
 //
 // If there is no nodes, Front will return nil.
 func (m *Map[K, V]) Front() *Node[K, V] {
-	return m.wrapNode(m.m.front())
+	return m.wrapNode(m.m.Front())
 }
 
 // Back returns last element of map.
 //
 // If there is no nodes, Back will return nil.
 func (m *Map[K, V]) Back() *Node[K, V] {
-	return m.wrapNode(m.m.back())
+	return m.wrapNode(m.m.Back())
 }
 
 // LowerBound returns the smallest node with node.key >= key.
 //
 // If there is no such nodes, LowerBound will return nil.
 func (m *Map[K, V]) LowerBound(key K) *Node[K, V] {
-	return m.wrapNode(m.m.lowerBound(key))
+	return m.wrapNode(m.m.LowerBound(key))
 }
 
 // Len returns amount of elements in map.
@@ -118,7 +118,7 @@ func (m *Map[K, V]) Len() int {
 
 // Clone creates copy of map.
 func (m *Map[K, V]) Clone() *Map[K, V] {
-	return &Map[K, V]{m: m.m.clone()}
+	return &Map[K, V]{m: m.m.Clone()}
 }
 
 func (m *Map[K, V]) wrapNode(n *avlNode[K, V]) *Node[K, V] {

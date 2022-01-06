@@ -118,6 +118,62 @@ func TestSimpleIntMap(t *testing.T) {
 	}
 }
 
+func testCheckBalance(tb testing.TB, n *avlNode[int, int]) {
+	if n == nil {
+		return
+	}
+	h := n.height
+	lh, rh := 0, 0
+	if n.left != nil {
+		lh = n.left.height
+	}
+	if n.right != nil {
+		rh = n.right.height
+	}
+	if lh < rh {
+		if rh-lh > 1 {
+			tb.Fatal("Tree is not balanced")
+		}
+		if rh+1 != h {
+			tb.Fatal("Tree is not balanced")
+		}
+	} else {
+		if lh-rh > 1 {
+			tb.Fatal("Tree is not balanced")
+		}
+		if lh+1 != h {
+			tb.Fatal("Tree is not balanced")
+		}
+	}
+}
+
+func TestRandomIntMap(t *testing.T) {
+	m := NewMap[int, int](intLess)
+	rnd := rand.New(rand.NewSource(42))
+	n := 300
+	{
+		p := rnd.Perm(n)
+		for i := 0; i < n; i++ {
+			it := m.Insert(p[i], i)
+			if it == nil {
+				t.Fatalf("Invalid insert (%d, %d)", p[i], i)
+			}
+			testCheckBalance(t, m.m.root)
+		}
+	}
+	{
+		p := rnd.Perm(n)
+		for i := 0; i < n; i++ {
+			it := m.Find(p[i])
+			if it == nil {
+				t.Fatalf("Unable to find key %d", p[i])
+			}
+			testCheckBalance(t, m.m.root)
+			m.Erase(it)
+		}
+	}
+}
+
 func BenchmarkSimpleIntMapSeqInsert(b *testing.B) {
 	m := NewMap[int, int](intLess)
 	for i := 0; i < b.N; i++ {
