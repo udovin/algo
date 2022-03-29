@@ -118,7 +118,7 @@ func TestSimpleIntMap(t *testing.T) {
 	}
 }
 
-func testCheckBalance(tb testing.TB, n *avlNode[int, int]) {
+func testCheckBalance(tb testing.TB, n *Node[int, int]) {
 	if n == nil {
 		return
 	}
@@ -158,7 +158,7 @@ func TestRandomIntMap(t *testing.T) {
 			if it == nil {
 				t.Fatalf("Invalid insert (%d, %d)", p[i], i)
 			}
-			testCheckBalance(t, m.m.root)
+			testCheckBalance(t, m.root)
 		}
 	}
 	{
@@ -168,7 +168,7 @@ func TestRandomIntMap(t *testing.T) {
 			if it == nil {
 				t.Fatalf("Unable to find key %d", p[i])
 			}
-			testCheckBalance(t, m.m.root)
+			testCheckBalance(t, m.root)
 			m.Erase(it)
 		}
 	}
