@@ -174,6 +174,17 @@ func TestRandomIntMap(t *testing.T) {
 	}
 }
 
+func TestInvalidErase(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("Expected panic")
+		}
+	}()
+	m1 := NewMap[int, int](intLess)
+	m2 := NewMap[int, int](intLess)
+	m2.Erase(m1.Insert(1, 2))
+}
+
 func BenchmarkSimpleIntMapSeqInsert(b *testing.B) {
 	m := NewMap[int, int](intLess)
 	for i := 0; i < b.N; i++ {
