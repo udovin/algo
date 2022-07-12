@@ -4,7 +4,7 @@ package maps
 type Node[K, V any] struct {
 	key    K
 	value  V
-	height int
+	height int8
 	left   *Node[K, V]
 	right  *Node[K, V]
 	parent *Node[K, V]
@@ -357,8 +357,8 @@ func (n *Node[K, V]) clone() *Node[K, V] {
 	return &c
 }
 
-func (n *Node[K, V]) balance() int {
-	b := 0
+func (n *Node[K, V]) balance() int8 {
+	var b int8
 	if n.left != nil {
 		b += n.left.height
 	}

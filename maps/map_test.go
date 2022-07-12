@@ -123,7 +123,7 @@ func testCheckBalance(tb testing.TB, n *Node[int, int]) {
 		return
 	}
 	h := n.height
-	lh, rh := 0, 0
+	var lh, rh int8 = 0, 0
 	if n.left != nil {
 		lh = n.left.height
 	}
