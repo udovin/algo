@@ -2,6 +2,7 @@ package btree
 
 import (
 	"sync"
+	"sync/atomic"
 )
 
 type MapIter[K, V any] interface {
@@ -55,10 +56,10 @@ func (n *mapNode[K, V]) clone() *mapNode[K, V] {
 }
 
 type mapImpl[K, V any] struct {
-	root  *mapNode[K, V]
+	mutex sync.Mutex
+	root  atomic.Pointer[mapNode[K, V]]
 	less  func(K, K) bool
-	len   int
-	mutex sync.RWMutex
+	len   int64
 }
 
 func (m *mapImpl[K, V]) search(n *mapNode[K, V], key K) (int, bool) {
@@ -78,7 +79,7 @@ func (m *mapImpl[K, V]) search(n *mapNode[K, V], key K) (int, bool) {
 }
 
 func (m *mapImpl[K, V]) Get(key K) (V, bool) {
-	n := m.getRoot()
+	n := m.root.Load()
 	var empty V
 	if n == nil {
 		return empty, false
@@ -95,36 +96,32 @@ func (m *mapImpl[K, V]) Get(key K) (V, bool) {
 	}
 }
 
-func (m *mapImpl[K, V]) getRoot() *mapNode[K, V] {
-	m.mutex.RLock()
-	defer m.mutex.RUnlock()
-	return m.root
-}
-
 func (m *mapImpl[K, V]) Set(key K, value V) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	item := mapItem[K, V]{key: key, value: value}
-	m.setRoot(item)
+	m.setRoot(m.root.Load(), item)
 }
 
-func (m *mapImpl[K, V]) setRoot(item mapItem[K, V]) {
-	if m.root == nil {
-		m.root = &mapNode[K, V]{len: 1}
-		m.root.items[0] = item
-		m.len = 1
+func (m *mapImpl[K, V]) setRoot(root *mapNode[K, V], item mapItem[K, V]) {
+	if root == nil {
+		root = &mapNode[K, V]{len: 1}
+		root.items[0] = item
+		atomic.StoreInt64(&m.len, 1)
+		m.root.Store(root)
 		return
 	}
-	split := m.setNode(&m.root, item)
+	split := m.setNode(&root, item)
 	if split {
-		left := m.root.clone()
+		left := root.clone()
 		mid, right := m.splitNode(left)
-		m.root = &mapNode[K, V]{len: 1}
-		m.root.items[0] = mid
-		m.root.children = &[mapMax + 1]*mapNode[K, V]{left, right}
-		m.setRoot(item)
+		root = &mapNode[K, V]{len: 1}
+		root.items[0] = mid
+		root.children = &[mapMax + 1]*mapNode[K, V]{left, right}
+		m.setRoot(root, item)
 		return
 	}
+	m.root.Store(root)
 }
 
 func (m *mapImpl[K, V]) setNode(p **mapNode[K, V], item mapItem[K, V]) bool {
@@ -145,7 +142,7 @@ func (m *mapImpl[K, V]) setNode(p **mapNode[K, V], item mapItem[K, V]) bool {
 		n.items[i] = item
 		n.len++
 		*p = n
-		m.len++
+		atomic.AddInt64(&m.len, 1)
 		return false
 	}
 	child := n.children[i]
@@ -195,13 +192,11 @@ func (m *mapImpl[K, V]) Delete(key K) {
 }
 
 func (m *mapImpl[K, V]) Len() int {
-	m.mutex.RLock()
-	defer m.mutex.RUnlock()
-	return m.len
+	return int(atomic.LoadInt64(&m.len))
 }
 
 func (m *mapImpl[K, V]) Iter() MapIter[K, V] {
-	return &mapIter[K, V]{root: m.getRoot()}
+	return &mapIter[K, V]{root: m.root.Load()}
 }
 
 type mapIter[K, V any] struct {
