@@ -2,6 +2,7 @@ package maps
 
 import (
 	"math/rand"
+	"sync"
 	"testing"
 )
 
@@ -183,6 +184,33 @@ func TestInvalidErase(t *testing.T) {
 	m1 := NewMap[int, int](intLess)
 	m2 := NewMap[int, int](intLess)
 	m2.Erase(m1.Insert(1, 2))
+}
+
+func BenchmarkSimpleIntMapSeqSet(b *testing.B) {
+	m := NewMap[int, int](intLess)
+	for i := 0; i < b.N; i++ {
+		m.Set(i, i)
+	}
+}
+
+func BenchmarkSimpleIntMapSeqGet(b *testing.B) {
+	m := NewMap[int, int](intLess)
+	for i := 0; i < b.N; i++ {
+		m.Set(i, i)
+	}
+	b.ResetTimer()
+	mu := sync.RWMutex{}
+	for i := 0; i < b.N; i++ {
+		mu.RLock()
+		v, ok := m.Get(i)
+		mu.RUnlock()
+		if !ok {
+			b.Fatalf("Unable to find key = %d", i)
+		}
+		if v != i {
+			b.Fatalf("Expected value = %d, got %d", i, v)
+		}
+	}
 }
 
 func BenchmarkSimpleIntMapSeqInsert(b *testing.B) {
