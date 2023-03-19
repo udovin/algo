@@ -1,4 +1,4 @@
-package maps
+package avltree
 
 import (
 	"math/rand"

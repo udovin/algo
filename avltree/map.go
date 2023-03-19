@@ -1,4 +1,4 @@
-package maps
+package avltree
 
 // Node represents element of map.
 type Node[K, V any] struct {
@@ -385,9 +385,11 @@ func (n *Node[K, V]) recalcHeight() {
 }
 
 // n        x
-//  \      /
-//   x => n
-//  /      \
+//
+//	\      /
+//	 x => n
+//	/      \
+//
 // y        y
 func (n *Node[K, V]) leftRotate() *Node[K, V] {
 	x := n.right
@@ -411,11 +413,13 @@ func (n *Node[K, V]) leftRotate() *Node[K, V] {
 	return x
 }
 
-//   n    x
-//  /      \
+//	 n    x
+//	/      \
+//
 // x   =>   n
-//  \      /
-//   y    y
+//
+//	\      /
+//	 y    y
 func (n *Node[K, V]) rightRotate() *Node[K, V] {
 	x := n.left
 	y := x.right

@@ -14,12 +14,17 @@ type MapIter[K, V any] interface {
 	Value() V
 }
 
+// Map represents map implementation using B-Tree.
+//
+// Map allows concurrent read/write operations.
 type Map[K, V any] interface {
 	Get(key K) (V, bool)
 	Set(key K, value V)
 	Delete(key K)
+	// Iter returns iterator on current snapshot.
 	Iter() MapIter[K, V]
 	Len() int
+	// Clone create clone of current map.
 	Clone() Map[K, V]
 }
 
