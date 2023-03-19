@@ -3,6 +3,7 @@ package btree
 import (
 	"sync"
 	"sync/atomic"
+	"unsafe"
 )
 
 type MapIter[K, V any] interface {
@@ -63,13 +64,13 @@ func (n *mapNode[K, V]) clone() *mapNode[K, V] {
 
 type mapImpl[K, V any] struct {
 	mutex sync.Mutex
-	root  atomic.Pointer[mapNode[K, V]]
+	root  *mapNode[K, V]
 	less  func(K, K) bool
 	len   int64
 }
 
 func (m *mapImpl[K, V]) Get(key K) (V, bool) {
-	n := m.root.Load()
+	n := m.getRoot()
 	var empty V
 	if n == nil {
 		return empty, false
@@ -90,13 +91,13 @@ func (m *mapImpl[K, V]) Set(key K, value V) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	item := mapItem[K, V]{key: key, value: value}
-	m.setRoot(m.root.Load(), item)
+	m.setRootNode(m.root, item)
 }
 
 func (m *mapImpl[K, V]) Delete(key K) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	root := m.root.Load()
+	root := m.root
 	if root == nil {
 		return
 	}
@@ -107,7 +108,7 @@ func (m *mapImpl[K, V]) Delete(key K) {
 	if m.len == 0 {
 		root = nil
 	}
-	m.root.Store(root)
+	m.setRoot(root)
 }
 
 func (m *mapImpl[K, V]) Len() int {
@@ -115,15 +116,25 @@ func (m *mapImpl[K, V]) Len() int {
 }
 
 func (m *mapImpl[K, V]) Iter() MapIter[K, V] {
-	return &mapIter[K, V]{root: m.root.Load()}
+	return &mapIter[K, V]{root: m.getRoot()}
 }
 
 func (m *mapImpl[K, V]) Clone() Map[K, V] {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	clone := mapImpl[K, V]{less: m.less, len: m.len}
-	clone.root.Store(m.root.Load())
+	clone.setRoot(m.getRoot())
 	return &clone
+}
+
+func (m *mapImpl[K, V]) getRoot() *mapNode[K, V] {
+	ptr := (*unsafe.Pointer)(unsafe.Pointer(&m.root))
+	return (*mapNode[K, V])(atomic.LoadPointer(ptr))
+}
+
+func (m *mapImpl[K, V]) setRoot(root *mapNode[K, V]) {
+	ptr := (*unsafe.Pointer)(unsafe.Pointer(&m.root))
+	atomic.StorePointer(ptr, unsafe.Pointer(root))
 }
 
 func (m *mapImpl[K, V]) search(n *mapNode[K, V], key K) (int, bool) {
@@ -142,12 +153,12 @@ func (m *mapImpl[K, V]) search(n *mapNode[K, V], key K) (int, bool) {
 	return low, false
 }
 
-func (m *mapImpl[K, V]) setRoot(root *mapNode[K, V], item mapItem[K, V]) {
+func (m *mapImpl[K, V]) setRootNode(root *mapNode[K, V], item mapItem[K, V]) {
 	if root == nil {
 		root = &mapNode[K, V]{len: 1}
 		root.items[0] = item
 		atomic.StoreInt64(&m.len, 1)
-		m.root.Store(root)
+		m.setRoot(root)
 		return
 	}
 	split := m.setNode(&root, item)
@@ -157,10 +168,10 @@ func (m *mapImpl[K, V]) setRoot(root *mapNode[K, V], item mapItem[K, V]) {
 		root = &mapNode[K, V]{len: 1}
 		root.items[0] = mid
 		root.children = &[mapMax + 1]*mapNode[K, V]{left, right}
-		m.setRoot(root, item)
+		m.setRootNode(root, item)
 		return
 	}
-	m.root.Store(root)
+	m.setRoot(root)
 }
 
 func (m *mapImpl[K, V]) setNode(p **mapNode[K, V], item mapItem[K, V]) bool {
