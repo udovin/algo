@@ -62,22 +62,6 @@ type mapImpl[K, V any] struct {
 	len   int64
 }
 
-func (m *mapImpl[K, V]) search(n *mapNode[K, V], key K) (int, bool) {
-	low, high := 0, n.len
-	for low < high {
-		mid := (low + high) / 2
-		if m.less(key, n.items[mid].key) {
-			high = mid
-		} else {
-			low = mid + 1
-		}
-	}
-	if low > 0 && !m.less(n.items[low-1].key, key) {
-		return low - 1, true
-	}
-	return low, false
-}
-
 func (m *mapImpl[K, V]) Get(key K) (V, bool) {
 	n := m.root.Load()
 	var empty V
@@ -101,6 +85,47 @@ func (m *mapImpl[K, V]) Set(key K, value V) {
 	defer m.mutex.Unlock()
 	item := mapItem[K, V]{key: key, value: value}
 	m.setRoot(m.root.Load(), item)
+}
+
+func (m *mapImpl[K, V]) Delete(key K) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	root := m.root.Load()
+	if root == nil {
+		return
+	}
+	m.deleteNode(&root, key)
+	if root.len == 0 && root.children != nil {
+		root = root.children[0]
+	}
+	if m.len == 0 {
+		root = nil
+	}
+	m.root.Store(root)
+}
+
+func (m *mapImpl[K, V]) Len() int {
+	return int(atomic.LoadInt64(&m.len))
+}
+
+func (m *mapImpl[K, V]) Iter() MapIter[K, V] {
+	return &mapIter[K, V]{root: m.root.Load()}
+}
+
+func (m *mapImpl[K, V]) search(n *mapNode[K, V], key K) (int, bool) {
+	low, high := 0, n.len
+	for low < high {
+		mid := (low + high) / 2
+		if m.less(key, n.items[mid].key) {
+			high = mid
+		} else {
+			low = mid + 1
+		}
+	}
+	if low > 0 && !m.less(n.items[low-1].key, key) {
+		return low - 1, true
+	}
+	return low, false
 }
 
 func (m *mapImpl[K, V]) setRoot(root *mapNode[K, V], item mapItem[K, V]) {
@@ -188,15 +213,116 @@ func (m *mapImpl[K, V]) splitNode(n *mapNode[K, V]) (mapItem[K, V], *mapNode[K, 
 	return mid, right
 }
 
-func (m *mapImpl[K, V]) Delete(key K) {
+func (m *mapImpl[K, V]) deleteNode(p **mapNode[K, V], key K) bool {
+	n := *p
+	i, ok := m.search(n, key)
+	if n.children == nil {
+		if ok {
+			n = n.clone()
+			copy(n.items[i:], n.items[i+1:n.len])
+			n.len--
+			n.items[n.len] = mapItem[K, V]{}
+			*p = n
+			atomic.AddInt64(&m.len, -1)
+			return true
+		}
+		return false
+	}
+	deleted := false
+	if ok {
+		child := n.children[i]
+		item := m.deleteMaxNode(&child)
+		n = n.clone()
+		n.items[i] = item
+		n.children[i] = child
+		*p = n
+		atomic.AddInt64(&m.len, -1)
+		deleted = true
+	} else {
+		child := n.children[i]
+		deleted = m.deleteNode(&child, key)
+		if deleted {
+			n = n.clone()
+			n.children[i] = child
+			*p = n
+		}
+	}
+	if !deleted {
+		return false
+	}
+	if n.children[i].len < mapMin {
+		m.rebalanceNode(n, i)
+	}
+	return true
 }
 
-func (m *mapImpl[K, V]) Len() int {
-	return int(atomic.LoadInt64(&m.len))
+func (m *mapImpl[K, V]) deleteMaxNode(p **mapNode[K, V]) mapItem[K, V] {
+	for {
+		*p = (*p).clone()
+		if (*p).children == nil {
+			item := (*p).items[(*p).len-1]
+			(*p).items[(*p).len-1] = mapItem[K, V]{}
+			(*p).len--
+			return item
+		}
+		p = &(*p).children[(*p).len]
+	}
 }
 
-func (m *mapImpl[K, V]) Iter() MapIter[K, V] {
-	return &mapIter[K, V]{root: m.root.Load()}
+func (m *mapImpl[K, V]) rebalanceNode(n *mapNode[K, V], i int) {
+	if i == n.len {
+		i--
+	}
+	left := n.children[i]
+	right := n.children[i+1]
+	if left.len+right.len < mapMax {
+		node := &mapNode[K, V]{len: left.len + right.len + 1}
+		copy(node.items[:], left.items[:left.len])
+		node.items[left.len] = n.items[i]
+		copy(node.items[left.len+1:], right.items[:right.len])
+		if left.children != nil {
+			copy(node.children[:], left.children[:left.len+1])
+			copy(node.children[left.len+1:], right.children[:right.len+1])
+		}
+		copy(n.items[i:], n.items[i+1:n.len])
+		n.len--
+		n.items[n.len] = mapItem[K, V]{}
+		copy(n.children[i+1:], n.children[i+2:n.len+2])
+		n.children[i] = node
+		n.children[n.len+1] = nil
+	} else if left.len > right.len {
+		left = left.clone()
+		right = right.clone()
+		copy(right.items[1:], right.items[:right.len])
+		right.items[0] = n.items[i]
+		right.len++
+		n.items[i] = left.items[left.len-1]
+		left.len--
+		left.items[left.len] = mapItem[K, V]{}
+		if left.children != nil {
+			copy(right.children[1:], right.children[:right.len])
+			right.children[0] = left.children[left.len+1]
+			left.children[left.len+1] = nil
+		}
+		n.children[i] = left
+		n.children[i+1] = right
+	} else {
+		left = left.clone()
+		right = right.clone()
+		left.items[left.len] = n.items[i]
+		left.len++
+		n.items[i] = right.items[0]
+		copy(right.items[:], right.items[1:right.len])
+		right.len--
+		right.items[right.len] = mapItem[K, V]{}
+		if left.children != nil {
+			left.children[left.len] = right.children[0]
+			copy(right.children[:], right.children[1:right.len+2])
+			right.children[right.len+1] = nil
+		}
+		n.children[i] = left
+		n.children[i+1] = right
+	}
 }
 
 type mapIter[K, V any] struct {

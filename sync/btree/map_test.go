@@ -62,6 +62,12 @@ func TestSimpleIntMap(t *testing.T) {
 			t.Fatal("Iter should be ended", it.Value())
 		}
 	}
+	for i := 0; i < 128; i++ {
+		m.Delete(i)
+		if v := m.Len(); v != 127-i {
+			t.Fatalf("Expected len = %d, got %d", 127-i, v)
+		}
+	}
 }
 
 func BenchmarkSimpleIntMapSeqSet(b *testing.B) {
