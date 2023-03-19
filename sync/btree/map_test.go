@@ -1,6 +1,7 @@
 package btree
 
 import (
+	"math/rand"
 	"testing"
 )
 
@@ -10,16 +11,17 @@ func intLess(x, y int) bool {
 
 func TestSimpleIntMap(t *testing.T) {
 	m := NewMap[int, int](intLess)
+	n := 1000
 	if v := m.Len(); v != 0 {
 		t.Fatalf("Expected len = %d, got %d", 0, v)
 	}
-	for i := 0; i < 128; i++ {
+	for i := 0; i < n; i++ {
 		m.Set(i, i)
 		if v := m.Len(); v != i+1 {
 			t.Fatalf("Expected len = %d, got %d", i+1, v)
 		}
 	}
-	for i := 0; i < 128; i++ {
+	for i := 0; i < n; i++ {
 		v, ok := m.Get(i)
 		if !ok {
 			t.Fatalf("Value %d does not exist", i)
@@ -30,7 +32,7 @@ func TestSimpleIntMap(t *testing.T) {
 	}
 	{
 		it := m.Iter()
-		for i := 0; i < 128; i++ {
+		for i := 0; i < n; i++ {
 			if !it.Next() {
 				t.Fatal("Unexpected end of iter")
 			}
@@ -47,7 +49,7 @@ func TestSimpleIntMap(t *testing.T) {
 	}
 	{
 		it := m.Iter()
-		for i := 127; i >= 0; i-- {
+		for i := n - 1; i >= 0; i-- {
 			if !it.Prev() {
 				t.Fatal("Unexpected end of iter")
 			}
@@ -62,10 +64,34 @@ func TestSimpleIntMap(t *testing.T) {
 			t.Fatal("Iter should be ended", it.Value())
 		}
 	}
-	for i := 0; i < 128; i++ {
+	for i := 0; i < n; i++ {
 		m.Delete(i)
-		if v := m.Len(); v != 127-i {
-			t.Fatalf("Expected len = %d, got %d", 127-i, v)
+		if v := m.Len(); v != n-i-1 {
+			t.Fatalf("Expected len = %d, got %d", n-i-1, v)
+		}
+	}
+}
+
+func TestRandomIntMap(t *testing.T) {
+	m := NewMap[int, int](intLess)
+	rnd := rand.New(rand.NewSource(42))
+	n := 1000
+	{
+		p := rnd.Perm(n)
+		for i := 0; i < n; i++ {
+			m.Set(p[i], i)
+			if v := m.Len(); v != i+1 {
+				t.Fatalf("Expected len = %d, got %d", i+1, v)
+			}
+		}
+	}
+	{
+		p := rnd.Perm(n)
+		for i := 0; i < n; i++ {
+			m.Delete(p[i])
+			if v := m.Len(); v != n-i-1 {
+				t.Fatalf("Expected len = %d, got %d", n-i-1, v)
+			}
 		}
 	}
 }
@@ -91,5 +117,16 @@ func BenchmarkSimpleIntMapSeqGet(b *testing.B) {
 		if v != i {
 			b.Fatalf("Expected value = %d, got %d", i, v)
 		}
+	}
+}
+
+func BenchmarkSimpleIntMapSeqDelete(b *testing.B) {
+	m := NewMap[int, int](intLess)
+	for i := 0; i < b.N; i++ {
+		m.Set(i, i)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Delete(i)
 	}
 }

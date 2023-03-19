@@ -20,6 +20,7 @@ type Map[K, V any] interface {
 	Delete(key K)
 	Iter() MapIter[K, V]
 	Len() int
+	Clone() Map[K, V]
 }
 
 func NewMap[K, V any](less func(K, K) bool) Map[K, V] {
@@ -110,6 +111,14 @@ func (m *mapImpl[K, V]) Len() int {
 
 func (m *mapImpl[K, V]) Iter() MapIter[K, V] {
 	return &mapIter[K, V]{root: m.root.Load()}
+}
+
+func (m *mapImpl[K, V]) Clone() Map[K, V] {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	clone := mapImpl[K, V]{less: m.less, len: m.len}
+	clone.root.Store(m.root.Load())
+	return &clone
 }
 
 func (m *mapImpl[K, V]) search(n *mapNode[K, V], key K) (int, bool) {
@@ -281,6 +290,7 @@ func (m *mapImpl[K, V]) rebalanceNode(n *mapNode[K, V], i int) {
 		node.items[left.len] = n.items[i]
 		copy(node.items[left.len+1:], right.items[:right.len])
 		if left.children != nil {
+			node.children = &[mapMax + 1]*mapNode[K, V]{}
 			copy(node.children[:], left.children[:left.len+1])
 			copy(node.children[left.len+1:], right.children[:right.len+1])
 		}

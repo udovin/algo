@@ -12,16 +12,17 @@ func intLess(x, y int) bool {
 
 func TestSimpleIntMap(t *testing.T) {
 	m := NewMap[int, int](intLess)
+	n := 1000
 	if v := m.Len(); v != 0 {
 		t.Fatalf("Expected len = %d, got %d", 0, v)
 	}
-	for i := 0; i < 16; i++ {
+	for i := 0; i < n; i++ {
 		m.Insert(i, i)
 		if v := m.Len(); v != i+1 {
 			t.Fatalf("Expected len = %d, got %d", i+1, v)
 		}
 	}
-	for i := 0; i < 16; i++ {
+	for i := 0; i < n; i++ {
 		it := m.Find(i)
 		if it == nil {
 			t.Fatalf("Value %d does not exist", i)
@@ -33,20 +34,20 @@ func TestSimpleIntMap(t *testing.T) {
 			t.Fatalf("Expected value = %d, got %d", i, v)
 		}
 	}
-	for i := 0; i < 16; i++ {
+	for i := 0; i < n; i++ {
 		if v, ok := m.Get(i); !ok || v != i {
 			t.Fatalf("Invalid value: %d", v)
 		}
 	}
 	{
 		c := m.Clone()
-		for i := 0; i < 16; i++ {
+		for i := 0; i < n; i++ {
 			c.Set(i, i*i)
 			if v, ok := c.Get(i); !ok || v != i*i {
 				t.Fatalf("Invalid value: %d", v)
 			}
 		}
-		for i := 0; i < 16; i++ {
+		for i := 0; i < n; i++ {
 			c.Unset(i)
 		}
 		if v := c.Len(); v != 0 {
@@ -63,8 +64,8 @@ func TestSimpleIntMap(t *testing.T) {
 	if it := m.Back(); it == nil {
 		t.Fatalf("Expected non empty value")
 	} else {
-		if v := it.Key(); v != 15 {
-			t.Fatalf("Expected key = %d, got %d", 15, v)
+		if v := it.Key(); v != n-1 {
+			t.Fatalf("Expected key = %d, got %d", n-1, v)
 		}
 	}
 	{
@@ -77,12 +78,12 @@ func TestSimpleIntMap(t *testing.T) {
 			}
 			prev = it.Key()
 		}
-		if cnt != 16 {
+		if cnt != n {
 			t.Fatalf("Invalid len: %d != %d", cnt, 16)
 		}
 	}
 	{
-		prev := 16
+		prev := n
 		cnt := 0
 		for it := m.Back(); it != nil; it = it.Prev() {
 			cnt++
@@ -91,8 +92,8 @@ func TestSimpleIntMap(t *testing.T) {
 			}
 			prev = it.Key()
 		}
-		if cnt != 16 {
-			t.Fatalf("Invalid len: %d != %d", cnt, 16)
+		if cnt != n {
+			t.Fatalf("Invalid len: %d != %d", cnt, n)
 		}
 	}
 	{
@@ -151,7 +152,7 @@ func testCheckBalance(tb testing.TB, n *Node[int, int]) {
 func TestRandomIntMap(t *testing.T) {
 	m := NewMap[int, int](intLess)
 	rnd := rand.New(rand.NewSource(42))
-	n := 300
+	n := 1000
 	{
 		p := rnd.Perm(n)
 		for i := 0; i < n; i++ {
@@ -210,6 +211,17 @@ func BenchmarkSimpleIntMapSeqGet(b *testing.B) {
 		if v != i {
 			b.Fatalf("Expected value = %d, got %d", i, v)
 		}
+	}
+}
+
+func BenchmarkSimpleIntMapSeqDelete(b *testing.B) {
+	m := NewMap[int, int](intLess)
+	for i := 0; i < b.N; i++ {
+		m.Set(i, i)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Unset(i)
 	}
 }
 
