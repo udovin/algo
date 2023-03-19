@@ -9,6 +9,7 @@ import (
 
 type Future[T any] interface {
 	Get(ctx context.Context) (T, error)
+	Done() <-chan struct{}
 }
 
 type ResultSetter[T any] func(T, error)
@@ -64,12 +65,17 @@ func (f *future[T]) Get(ctx context.Context) (T, error) {
 		return f.value, f.err
 	default:
 	}
+	var empty T
 	select {
 	case <-f.done:
 		return f.value, f.err
 	case <-ctx.Done():
-		return f.value, ctx.Err()
+		return empty, ctx.Err()
 	}
+}
+
+func (f *future[T]) Done() <-chan struct{} {
+	return f.done
 }
 
 type PanicError struct {
