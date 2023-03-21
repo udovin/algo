@@ -24,7 +24,7 @@ func TestSimpleIntMap(t *testing.T) {
 	for i := 0; i < n; i++ {
 		v, ok := m.Get(i)
 		if !ok {
-			t.Fatalf("Value %d does not exist", i)
+			t.Fatalf("Key %d does not exist", i)
 		}
 		if v != i {
 			t.Fatalf("Expected value = %d, got %d", i, v)
@@ -83,6 +83,18 @@ func TestRandomIntMap(t *testing.T) {
 			if v := m.Len(); v != i+1 {
 				t.Fatalf("Expected len = %d, got %d", i+1, v)
 			}
+		}
+		for i := 0; i < n; i++ {
+			v, ok := m.Get(p[i])
+			if !ok {
+				t.Fatalf("Key %d does not exist", i)
+			}
+			if v != i {
+				t.Fatalf("Expected value = %d, got %d", i, v)
+			}
+		}
+		if _, ok := m.Get(n); ok {
+			t.Fatalf("Key %d should not exist", n)
 		}
 	}
 	{
