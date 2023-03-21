@@ -11,7 +11,7 @@ func intLess(x, y int) bool {
 
 func TestSimpleIntMap(t *testing.T) {
 	m := NewMap[int, int](intLess)
-	n := 1000
+	n := 3000
 	if v := m.Len(); v != 0 {
 		t.Fatalf("Expected len = %d, got %d", 0, v)
 	}
@@ -20,6 +20,19 @@ func TestSimpleIntMap(t *testing.T) {
 		if v := m.Len(); v != i+1 {
 			t.Fatalf("Expected len = %d, got %d", i+1, v)
 		}
+	}
+	for i := 0; i < 3; i++ {
+		m.Set(n, i)
+		v, ok := m.Get(n)
+		if !ok {
+			t.Fatalf("Key %d does not exist", i)
+		}
+		if v != i {
+			t.Fatalf("Expected value = %d, got %d", i, v)
+		}
+	}
+	for i := 0; i < 3; i++ {
+		m.Delete(n)
 	}
 	for i := 0; i < n; i++ {
 		v, ok := m.Get(i)
@@ -75,7 +88,7 @@ func TestSimpleIntMap(t *testing.T) {
 func TestRandomIntMap(t *testing.T) {
 	m := NewMap[int, int](intLess)
 	rnd := rand.New(rand.NewSource(42))
-	n := 1000
+	n := 3000
 	{
 		p := rnd.Perm(n)
 		for i := 0; i < n; i++ {
@@ -104,6 +117,10 @@ func TestRandomIntMap(t *testing.T) {
 			if v := m.Len(); v != n-i-1 {
 				t.Fatalf("Expected len = %d, got %d", n-i-1, v)
 			}
+		}
+		m.Delete(0)
+		if _, ok := m.Get(n); ok {
+			t.Fatalf("Key %d should not exist", n)
 		}
 	}
 }

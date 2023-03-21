@@ -24,8 +24,8 @@ func NewMap[K, V any](less func(K, K) bool) Map[K, V] {
 
 const (
 	mapDegree = 32
-	mapMax    = mapDegree*2 - 1
-	mapMin    = mapMax / 2
+	maxLen    = mapDegree*2 - 1
+	minLen    = maxLen / 2
 )
 
 type mapItem[K, V any] struct {
@@ -34,8 +34,8 @@ type mapItem[K, V any] struct {
 }
 
 type mapNode[K, V any] struct {
-	items    [mapMax]mapItem[K, V]
-	children *[mapMax + 1]*mapNode[K, V]
+	items    [maxLen]mapItem[K, V]
+	children *[maxLen + 1]*mapNode[K, V]
 	len      int
 }
 
@@ -86,7 +86,7 @@ func (m *mapImpl[K, V]) Len() int {
 }
 
 func (m *mapImpl[K, V]) Iter() MapIter[K, V] {
-	return &mapIter[K, V]{root: m.root}
+	return &mapIter[K, V]{m: m}
 }
 
 func (m *mapImpl[K, V]) search(n *mapNode[K, V], key K) (int, bool) {
@@ -118,7 +118,7 @@ func (m *mapImpl[K, V]) setRootNode(item mapItem[K, V]) {
 		mid, right := m.splitNode(left)
 		m.root = &mapNode[K, V]{len: 1}
 		m.root.items[0] = mid
-		m.root.children = &[mapMax + 1]*mapNode[K, V]{left, right}
+		m.root.children = &[maxLen + 1]*mapNode[K, V]{left, right}
 		m.setRootNode(item)
 	}
 }
@@ -131,7 +131,7 @@ func (m *mapImpl[K, V]) setNode(p **mapNode[K, V], item mapItem[K, V]) bool {
 		return false
 	}
 	if n.children == nil {
-		if n.len == mapMax {
+		if n.len == maxLen {
 			return true
 		}
 		copy(n.items[i+1:], n.items[i:n.len])
@@ -142,13 +142,13 @@ func (m *mapImpl[K, V]) setNode(p **mapNode[K, V], item mapItem[K, V]) bool {
 	}
 	split := m.setNode(&n.children[i], item)
 	if split {
-		if n.len == mapMax {
+		if n.len == maxLen {
 			return true
 		}
 		mid, right := m.splitNode(n.children[i])
-		copy(n.items[i+1:], n.items[i:])
+		copy(n.items[i+1:], n.items[i:n.len])
 		n.items[i] = mid
-		copy(n.children[i+1:], n.children[i:])
+		copy(n.children[i+1:], n.children[i:n.len+1])
 		n.children[i+1] = right
 		n.len++
 		return m.setNode(p, item)
@@ -157,15 +157,15 @@ func (m *mapImpl[K, V]) setNode(p **mapNode[K, V], item mapItem[K, V]) bool {
 }
 
 func (m *mapImpl[K, V]) splitNode(n *mapNode[K, V]) (mapItem[K, V], *mapNode[K, V]) {
-	i := mapMax / 2
+	i := maxLen / 2
 	mid := n.items[i]
 	right := &mapNode[K, V]{len: n.len - i - 1}
 	copy(right.items[:], n.items[i+1:])
 	if n.children != nil {
-		right.children = &[mapMax + 1]*mapNode[K, V]{}
+		right.children = &[maxLen + 1]*mapNode[K, V]{}
 		copy(right.children[:], n.children[i+1:])
 	}
-	for j := i; j < mapMax; j++ {
+	for j := i; j < maxLen; j++ {
 		n.items[j] = mapItem[K, V]{}
 		if n.children != nil {
 			n.children[j+1] = nil
@@ -190,7 +190,7 @@ func (m *mapImpl[K, V]) deleteNode(p **mapNode[K, V], key K) bool {
 	}
 	deleted := false
 	if ok {
-		item := m.deleteMaxNode(n.children[i])
+		item := m.deleteMaxItem(n.children[i])
 		n.items[i] = item
 		m.len--
 		deleted = true
@@ -200,13 +200,13 @@ func (m *mapImpl[K, V]) deleteNode(p **mapNode[K, V], key K) bool {
 	if !deleted {
 		return false
 	}
-	if n.children[i].len < mapMin {
+	if n.children[i].len < minLen {
 		m.rebalanceNode(n, i)
 	}
 	return true
 }
 
-func (m *mapImpl[K, V]) deleteMaxNode(n *mapNode[K, V]) mapItem[K, V] {
+func (m *mapImpl[K, V]) deleteMaxItem(n *mapNode[K, V]) mapItem[K, V] {
 	for {
 		if n.children == nil {
 			n.len--
@@ -224,51 +224,51 @@ func (m *mapImpl[K, V]) rebalanceNode(n *mapNode[K, V], i int) {
 	}
 	left := n.children[i]
 	right := n.children[i+1]
-	if left.len+right.len < mapMax {
+	if left.len+right.len < maxLen {
 		node := &mapNode[K, V]{len: left.len + right.len + 1}
 		copy(node.items[:], left.items[:left.len])
 		node.items[left.len] = n.items[i]
 		copy(node.items[left.len+1:], right.items[:right.len])
 		if left.children != nil {
-			node.children = &[mapMax + 1]*mapNode[K, V]{}
+			node.children = &[maxLen + 1]*mapNode[K, V]{}
 			copy(node.children[:], left.children[:left.len+1])
 			copy(node.children[left.len+1:], right.children[:right.len+1])
 		}
 		copy(n.items[i:], n.items[i+1:n.len])
+		copy(n.children[i+1:], n.children[i+2:n.len+1])
+		n.children[i] = node
+		n.children[n.len] = nil
 		n.len--
 		n.items[n.len] = mapItem[K, V]{}
-		copy(n.children[i+1:], n.children[i+2:n.len+2])
-		n.children[i] = node
-		n.children[n.len+1] = nil
 	} else if left.len > right.len {
 		copy(right.items[1:], right.items[:right.len])
 		right.items[0] = n.items[i]
 		right.len++
 		n.items[i] = left.items[left.len-1]
-		left.len--
-		left.items[left.len] = mapItem[K, V]{}
 		if left.children != nil {
 			copy(right.children[1:], right.children[:right.len])
-			right.children[0] = left.children[left.len+1]
-			left.children[left.len+1] = nil
+			right.children[0] = left.children[left.len]
+			left.children[left.len] = nil
 		}
+		left.len--
+		left.items[left.len] = mapItem[K, V]{}
 	} else {
 		left.items[left.len] = n.items[i]
 		left.len++
 		n.items[i] = right.items[0]
 		copy(right.items[:], right.items[1:right.len])
-		right.len--
-		right.items[right.len] = mapItem[K, V]{}
 		if left.children != nil {
 			left.children[left.len] = right.children[0]
-			copy(right.children[:], right.children[1:right.len+2])
-			right.children[right.len+1] = nil
+			copy(right.children[:], right.children[1:right.len+1])
+			right.children[right.len] = nil
 		}
+		right.len--
+		right.items[right.len] = mapItem[K, V]{}
 	}
 }
 
 type mapIter[K, V any] struct {
-	root   *mapNode[K, V]
+	m      *mapImpl[K, V]
 	stack  []mapIterPos[K, V]
 	item   mapItem[K, V]
 	seeked bool
@@ -280,12 +280,12 @@ type mapIterPos[K, V any] struct {
 }
 
 func (m *mapIter[K, V]) First() bool {
-	if m.root == nil {
+	if m.m.root == nil {
 		return false
 	}
 	m.seeked = true
 	m.stack = m.stack[:0]
-	n := m.root
+	n := m.m.root
 	for {
 		m.stack = append(m.stack, mapIterPos[K, V]{n, 0})
 		if n.children == nil {
@@ -298,12 +298,12 @@ func (m *mapIter[K, V]) First() bool {
 }
 
 func (m *mapIter[K, V]) Last() bool {
-	if m.root == nil {
+	if m.m.root == nil {
 		return false
 	}
 	m.seeked = true
 	m.stack = m.stack[:0]
-	n := m.root
+	n := m.m.root
 	for {
 		m.stack = append(m.stack, mapIterPos[K, V]{n, n.len})
 		if n.children == nil {
