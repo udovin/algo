@@ -5,7 +5,7 @@ type MapIter[K, V any] interface {
 	Prev() bool
 	First() bool
 	Last() bool
-	LowerBound(K) bool
+	Seek(K) bool
 	Key() K
 	Value() V
 }
@@ -389,7 +389,7 @@ func (m *mapIter[K, V]) Prev() bool {
 	return true
 }
 
-func (m *mapIter[K, V]) LowerBound(key K) bool {
+func (m *mapIter[K, V]) Seek(key K) bool {
 	if m.m.root == nil {
 		return false
 	}

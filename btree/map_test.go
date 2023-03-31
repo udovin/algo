@@ -80,7 +80,7 @@ func TestSimpleIntMap(t *testing.T) {
 	{
 		it := m.Iter()
 		for i := 0; i < n; i++ {
-			if !it.LowerBound(i) {
+			if !it.Seek(i) {
 				t.Fatal("Unexpected end of iter")
 			}
 			if v := it.Key(); v != i {
@@ -90,7 +90,7 @@ func TestSimpleIntMap(t *testing.T) {
 				t.Fatalf("Expected value = %d, got %d", i, v)
 			}
 		}
-		if it.LowerBound(n) {
+		if it.Seek(n) {
 			t.Fatal("Iter should be ended", it.Value())
 		}
 	}
