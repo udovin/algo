@@ -77,6 +77,23 @@ func TestSimpleIntMap(t *testing.T) {
 			t.Fatal("Iter should be ended", it.Value())
 		}
 	}
+	{
+		it := m.Iter()
+		for i := 0; i < n; i++ {
+			if !it.LowerBound(i) {
+				t.Fatal("Unexpected end of iter")
+			}
+			if v := it.Key(); v != i {
+				t.Fatalf("Expected key = %d, got %d", i, v)
+			}
+			if v := it.Value(); v != i {
+				t.Fatalf("Expected value = %d, got %d", i, v)
+			}
+		}
+		if it.LowerBound(n) {
+			t.Fatal("Iter should be ended", it.Value())
+		}
+	}
 	for i := 0; i < n; i++ {
 		m.Delete(i)
 		if v := m.Len(); v != n-i-1 {

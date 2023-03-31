@@ -5,6 +5,7 @@ type MapIter[K, V any] interface {
 	Prev() bool
 	First() bool
 	Last() bool
+	LowerBound(K) bool
 	Key() K
 	Value() V
 }
@@ -386,6 +387,28 @@ func (m *mapIter[K, V]) Prev() bool {
 	}
 	m.item = s.n.items[s.i]
 	return true
+}
+
+func (m *mapIter[K, V]) LowerBound(key K) bool {
+	if m.m.root == nil {
+		return false
+	}
+	m.seeked = true
+	m.stack = m.stack[:0]
+	n := m.m.root
+	for {
+		i, ok := m.m.search(n, key)
+		m.stack = append(m.stack, mapIterPos[K, V]{n, i})
+		if ok {
+			m.item = n.items[i]
+			return true
+		}
+		if n.children == nil {
+			m.stack[len(m.stack)-1].i--
+			return m.Next()
+		}
+		n = n.children[i]
+	}
 }
 
 func (m *mapIter[K, V]) Key() K {
