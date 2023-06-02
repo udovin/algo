@@ -53,6 +53,19 @@ func CallAfter[T any, V any](future Future[T], fn func(Future[T]) (V, error)) Fu
 	return Call(wrapFn)
 }
 
+func NewDone[T any](v T, err error) Future[T] {
+	return doneFuture[T]{value: v, err: err}
+}
+
+type PanicError struct {
+	Value any
+	Stack []byte
+}
+
+func (p PanicError) Error() string {
+	return fmt.Sprintf("panic: %v", p.Value)
+}
+
 type future[T any] struct {
 	done  <-chan struct{}
 	value T
@@ -78,11 +91,21 @@ func (f *future[T]) Done() <-chan struct{} {
 	return f.done
 }
 
-type PanicError struct {
-	Value any
-	Stack []byte
+type doneFuture[T any] struct {
+	value T
+	err   error
 }
 
-func (p PanicError) Error() string {
-	return fmt.Sprintf("panic: %v", p.Value)
+func (v doneFuture[T]) Get(ctx context.Context) (T, error) {
+	return v.value, v.err
+}
+
+func (v doneFuture[T]) Done() <-chan struct{} {
+	return chanDone
+}
+
+var chanDone = make(chan struct{})
+
+func init() {
+	close(chanDone)
 }
