@@ -63,3 +63,46 @@ func TestNewFuture(t *testing.T) {
 		}
 	}
 }
+
+func TestCall(t *testing.T) {
+	{
+		future := Call(func() (int, error) {
+			return 42, nil
+		})
+		if v, err := future.Get(context.Background()); err != nil {
+			t.Fatal("Error:", err)
+		} else if v != 42 {
+			t.Fatalf("Expected %d but got %d", 42, v)
+		}
+	}
+	{
+		future := Call(func() (int, error) {
+			panic("error")
+		})
+		if _, err := future.Get(context.Background()); err == nil {
+			t.Fatal("Expected error")
+		} else {
+			if m := err.Error(); m != "panic: error" {
+				t.Fatalf("Expected %q but got %q", "panic: error", m)
+			}
+			if _, ok := err.(PanicError); !ok {
+				t.Fatal("Expected PanicError")
+			}
+		}
+	}
+	{
+		future := Call(func() (int, error) {
+			panic(nil)
+		})
+		if _, err := future.Get(context.Background()); err == nil {
+			t.Fatal("Expected error")
+		} else {
+			if m := err.Error(); m != "panic: <nil>" {
+				t.Fatalf("Expected %q but got %q", "panic: <nil>", m)
+			}
+			if _, ok := err.(PanicError); !ok {
+				t.Fatal("Expected PanicError")
+			}
+		}
+	}
+}
