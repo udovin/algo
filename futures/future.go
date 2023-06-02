@@ -12,7 +12,7 @@ type Future[T any] interface {
 	Done() <-chan struct{}
 }
 
-type ResultSetter[T any] func(T, error)
+type ResultSetter[T any] func(value T, err error)
 
 func New[T any]() (Future[T], ResultSetter[T]) {
 	done := make(chan struct{})
@@ -53,8 +53,8 @@ func CallAfter[T any, V any](future Future[T], fn func(Future[T]) (V, error)) Fu
 	return Call(wrapFn)
 }
 
-func NewDone[T any](v T, err error) Future[T] {
-	return doneFuture[T]{value: v, err: err}
+func NewDone[T any](value T, err error) Future[T] {
+	return doneFuture[T]{value: value, err: err}
 }
 
 type PanicError struct {
