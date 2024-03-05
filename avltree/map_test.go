@@ -187,14 +187,14 @@ func TestInvalidErase(t *testing.T) {
 	m2.Erase(m1.Insert(1, 2))
 }
 
-func BenchmarkSimpleIntMapSeqSet(b *testing.B) {
+func BenchmarkAvltreeSimpleIntMapSeqSet(b *testing.B) {
 	m := NewMap[int, int](intLess)
 	for i := 0; i < b.N; i++ {
 		m.Set(i, i)
 	}
 }
 
-func BenchmarkSimpleIntMapSeqGet(b *testing.B) {
+func BenchmarkAvltreeSimpleIntMapSeqGet(b *testing.B) {
 	m := NewMap[int, int](intLess)
 	for i := 0; i < b.N; i++ {
 		m.Set(i, i)
@@ -214,7 +214,7 @@ func BenchmarkSimpleIntMapSeqGet(b *testing.B) {
 	}
 }
 
-func BenchmarkSimpleIntMapSeqDelete(b *testing.B) {
+func BenchmarkAvltreeSimpleIntMapSeqDelete(b *testing.B) {
 	m := NewMap[int, int](intLess)
 	for i := 0; i < b.N; i++ {
 		m.Set(i, i)
@@ -225,14 +225,14 @@ func BenchmarkSimpleIntMapSeqDelete(b *testing.B) {
 	}
 }
 
-func BenchmarkSimpleIntMapSeqInsert(b *testing.B) {
+func BenchmarkAvltreeSimpleIntMapSeqInsert(b *testing.B) {
 	m := NewMap[int, int](intLess)
 	for i := 0; i < b.N; i++ {
 		m.Insert(i, i)
 	}
 }
 
-func BenchmarkSimpleIntMapSeqFind(b *testing.B) {
+func BenchmarkAvltreeSimpleIntMapSeqFind(b *testing.B) {
 	m := NewMap[int, int](intLess)
 	for i := 0; i < b.N; i++ {
 		m.Insert(i, i)
@@ -245,7 +245,7 @@ func BenchmarkSimpleIntMapSeqFind(b *testing.B) {
 	}
 }
 
-func BenchmarkSimpleIntMapSeqErase(b *testing.B) {
+func BenchmarkAvltreeSimpleIntMapSeqErase(b *testing.B) {
 	m := NewMap[int, int](intLess)
 	for i := 0; i < b.N; i++ {
 		m.Insert(i, i)
@@ -260,7 +260,7 @@ func BenchmarkSimpleIntMapSeqErase(b *testing.B) {
 	}
 }
 
-func BenchmarkSimpleIntMapInsert(b *testing.B) {
+func BenchmarkAvltreeSimpleIntMapInsert(b *testing.B) {
 	rnd := rand.New(rand.NewSource(42))
 	b.ResetTimer()
 	m := NewMap[int, int](intLess)
@@ -270,7 +270,7 @@ func BenchmarkSimpleIntMapInsert(b *testing.B) {
 	}
 }
 
-func BenchmarkSimpleIntMapFind(b *testing.B) {
+func BenchmarkAvltreeSimpleIntMapFind(b *testing.B) {
 	m := NewMap[int, int](intLess)
 	for i := 0; i < b.N; i++ {
 		m.Insert(i, i)
@@ -285,7 +285,7 @@ func BenchmarkSimpleIntMapFind(b *testing.B) {
 	}
 }
 
-func BenchmarkSimpleIntMapErase(b *testing.B) {
+func BenchmarkAvltreeSimpleIntMapErase(b *testing.B) {
 	m := NewMap[int, int](intLess)
 	for i := 0; i < b.N; i++ {
 		m.Insert(i, i)

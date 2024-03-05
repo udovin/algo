@@ -142,7 +142,7 @@ func TestRandomIntMap(t *testing.T) {
 	}
 }
 
-func BenchmarkSimpleIntMapSeqSet(b *testing.B) {
+func BenchmarkBtreeSimpleIntMapSeqSet(b *testing.B) {
 	m := NewMap[int, int](intLess)
 	for i := 0; i < b.N; i++ {
 		m.Set(i, i)
@@ -157,7 +157,7 @@ type testObject struct {
 	Parent *int64
 }
 
-func BenchmarkObjectMapSeqSet(b *testing.B) {
+func BenchmarkBtreeObjectMapSeqSet(b *testing.B) {
 	m := NewMap[int, testObject](intLess)
 	for i := 0; i < b.N; i++ {
 		m.Set(i, testObject{
@@ -166,7 +166,7 @@ func BenchmarkObjectMapSeqSet(b *testing.B) {
 	}
 }
 
-func BenchmarkSimpleIntMapSeqGet(b *testing.B) {
+func BenchmarkBtreeSimpleIntMapSeqGet(b *testing.B) {
 	m := NewMap[int, int](intLess)
 	for i := 0; i < b.N; i++ {
 		m.Set(i, i)
@@ -183,7 +183,7 @@ func BenchmarkSimpleIntMapSeqGet(b *testing.B) {
 	}
 }
 
-func BenchmarkObjectMapSeqGet(b *testing.B) {
+func BenchmarkBtreeObjectMapSeqGet(b *testing.B) {
 	m := NewMap[int, testObject](intLess)
 	for i := 0; i < b.N; i++ {
 		m.Set(i, testObject{
@@ -202,7 +202,7 @@ func BenchmarkObjectMapSeqGet(b *testing.B) {
 	}
 }
 
-func BenchmarkSimpleIntMapSeqDelete(b *testing.B) {
+func BenchmarkBtreeSimpleIntMapSeqDelete(b *testing.B) {
 	m := NewMap[int, int](intLess)
 	for i := 0; i < b.N; i++ {
 		m.Set(i, i)
@@ -213,7 +213,7 @@ func BenchmarkSimpleIntMapSeqDelete(b *testing.B) {
 	}
 }
 
-func BenchmarkObjectMapSeqDelete(b *testing.B) {
+func BenchmarkBtreeObjectMapSeqDelete(b *testing.B) {
 	m := NewMap[int, testObject](intLess)
 	for i := 0; i < b.N; i++ {
 		m.Set(i, testObject{

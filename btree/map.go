@@ -15,8 +15,8 @@ type Map[K, V any] interface {
 	Get(key K) (V, bool)
 	Set(key K, value V)
 	Delete(key K)
-	Iter() MapIter[K, V]
 	Len() int
+	Iter() MapIter[K, V]
 }
 
 func NewMap[K, V any](less func(K, K) bool) Map[K, V] {
