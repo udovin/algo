@@ -149,6 +149,23 @@ func BenchmarkSimpleIntMapSeqSet(b *testing.B) {
 	}
 }
 
+type testObject struct {
+	ID     int64
+	Name   string
+	Meta   []byte
+	Flags  [16]byte
+	Parent *int64
+}
+
+func BenchmarkObjectMapSeqSet(b *testing.B) {
+	m := NewMap[int, testObject](intLess)
+	for i := 0; i < b.N; i++ {
+		m.Set(i, testObject{
+			ID: int64(i),
+		})
+	}
+}
+
 func BenchmarkSimpleIntMapSeqGet(b *testing.B) {
 	m := NewMap[int, int](intLess)
 	for i := 0; i < b.N; i++ {
@@ -166,10 +183,42 @@ func BenchmarkSimpleIntMapSeqGet(b *testing.B) {
 	}
 }
 
+func BenchmarkObjectMapSeqGet(b *testing.B) {
+	m := NewMap[int, testObject](intLess)
+	for i := 0; i < b.N; i++ {
+		m.Set(i, testObject{
+			ID: int64(i),
+		})
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		v, ok := m.Get(i)
+		if !ok {
+			b.Fatalf("Unable to find key = %d", i)
+		}
+		if v.ID != int64(i) {
+			b.Fatalf("Expected value = %d, got %d", i, v.ID)
+		}
+	}
+}
+
 func BenchmarkSimpleIntMapSeqDelete(b *testing.B) {
 	m := NewMap[int, int](intLess)
 	for i := 0; i < b.N; i++ {
 		m.Set(i, i)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Delete(i)
+	}
+}
+
+func BenchmarkObjectMapSeqDelete(b *testing.B) {
+	m := NewMap[int, testObject](intLess)
+	for i := 0; i < b.N; i++ {
+		m.Set(i, testObject{
+			ID: int64(i),
+		})
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
