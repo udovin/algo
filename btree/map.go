@@ -85,6 +85,7 @@ func (m *mapImpl[K, V]) Iter() MapIter[K, V] {
 	return &mapIter[K, V]{m: m}
 }
 
+// search returns `pos` that `keys[pos] >= key` and flag that `keys[pos] == key`.
 func (m *mapImpl[K, V]) search(n *mapNode[K, V], key K) (int, bool) {
 	low, high := 0, n.len
 	for low < high {
@@ -305,7 +306,7 @@ type mapIter[K, V any] struct {
 	m      *mapImpl[K, V]
 	stack  []mapIterPos[K, V]
 	key    K
-	value  V
+	value  *V
 	seeked bool
 }
 
@@ -329,7 +330,7 @@ func (m *mapIter[K, V]) First() bool {
 		n = n.children[0]
 	}
 	m.key = n.keys[0]
-	m.value = n.values[0]
+	m.value = &n.values[0]
 	return true
 }
 
@@ -349,7 +350,7 @@ func (m *mapIter[K, V]) Last() bool {
 		n = n.children[n.len]
 	}
 	m.key = n.keys[n.len-1]
-	m.value = n.values[n.len-1]
+	m.value = &n.values[n.len-1]
 	return true
 }
 
@@ -365,6 +366,9 @@ func (m *mapIter[K, V]) Next() bool {
 				m.stack = m.stack[:len(m.stack)-1]
 				if len(m.stack) == 0 {
 					m.seeked = false
+					var emptyKey K
+					m.key = emptyKey
+					m.value = nil
 					return false
 				}
 				s = &m.stack[len(m.stack)-1]
@@ -385,7 +389,7 @@ func (m *mapIter[K, V]) Next() bool {
 		s = &m.stack[len(m.stack)-1]
 	}
 	m.key = s.n.keys[s.i]
-	m.value = s.n.values[s.i]
+	m.value = &s.n.values[s.i]
 	return true
 }
 
@@ -401,6 +405,9 @@ func (m *mapIter[K, V]) Prev() bool {
 				m.stack = m.stack[:len(m.stack)-1]
 				if len(m.stack) == 0 {
 					m.seeked = false
+					var emptyKey K
+					m.key = emptyKey
+					m.value = nil
 					return false
 				}
 				s = &m.stack[len(m.stack)-1]
@@ -423,7 +430,7 @@ func (m *mapIter[K, V]) Prev() bool {
 		s = &m.stack[len(m.stack)-1]
 	}
 	m.key = s.n.keys[s.i]
-	m.value = s.n.values[s.i]
+	m.value = &s.n.values[s.i]
 	return true
 }
 
@@ -439,7 +446,7 @@ func (m *mapIter[K, V]) Seek(key K) bool {
 		m.stack = append(m.stack, mapIterPos[K, V]{n, i})
 		if ok {
 			m.key = n.keys[i]
-			m.value = n.values[i]
+			m.value = &n.values[i]
 			return true
 		}
 		if n.children == nil {
@@ -450,10 +457,32 @@ func (m *mapIter[K, V]) Seek(key K) bool {
 	}
 }
 
+func (m *mapIter[K, V]) SeekPrev(key K) bool {
+	if m.m.root == nil {
+		return false
+	}
+	m.seeked = true
+	m.stack = m.stack[:0]
+	n := m.m.root
+	for {
+		i, ok := m.m.search(n, key)
+		m.stack = append(m.stack, mapIterPos[K, V]{n, i})
+		if ok {
+			m.key = n.keys[i]
+			m.value = &n.values[i]
+			return true
+		}
+		if n.children == nil {
+			return m.Prev()
+		}
+		n = n.children[i]
+	}
+}
+
 func (m *mapIter[K, V]) Key() K {
 	return m.key
 }
 
 func (m *mapIter[K, V]) Value() V {
-	return m.value
+	return *m.value
 }
