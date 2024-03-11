@@ -1,13 +1,28 @@
 package btree
 
 type MapIter[K, V any] interface {
+	// Next moves iterator forward.
 	Next() bool
+	// Prev moves iterator backward.
 	Prev() bool
+	// First moves iterator to first item with smallest key, or
+	// returns false if map is empty.
 	First() bool
+	// Last moves iterator to last item with largest key, or
+	// returns false if map is empty.
 	Last() bool
-	Seek(K) bool
+	// Seek moves iterator to item with item.key >= key, or 
+	// returns false if there is no such key.
+	Seek(key K) bool
+	// Seek moves iterator to item with item.key <= key, or 
+	// returns false if there is no such key.
+	SeekPrev(K) bool
+	// Key returns current item key.
 	Key() K
+	// Value returns current item value.
 	Value() V
+	// SetValue sets value of current item.
+	SetValue(value V)
 }
 
 // Map represents map implementation using B-Tree.
@@ -485,4 +500,8 @@ func (m *mapIter[K, V]) Key() K {
 
 func (m *mapIter[K, V]) Value() V {
 	return *m.value
+}
+
+func (m *mapIter[K, V]) SetValue(value V) {
+	*m.value = value
 }
