@@ -90,8 +90,31 @@ func TestSimpleIntMap(t *testing.T) {
 				t.Fatalf("Expected value = %d, got %d", i, v)
 			}
 		}
+		if !it.Seek(-1) {
+			t.Fatal("Unexpected end of iter")
+		}
 		if it.Seek(n) {
 			t.Fatal("Iter should be ended", it.Value())
+		}
+	}
+	{
+		it := m.Iter()
+		for i := 0; i < n; i++ {
+			if !it.SeekPrev(i) {
+				t.Fatal("Unexpected end of iter")
+			}
+			if v := it.Key(); v != i {
+				t.Fatalf("Expected key = %d, got %d", i, v)
+			}
+			if v := it.Value(); v != i {
+				t.Fatalf("Expected value = %d, got %d", i, v)
+			}
+		}
+		if it.SeekPrev(-1) {
+			t.Fatal("Iter should be ended", it.Value())
+		}
+		if !it.SeekPrev(n) {
+			t.Fatal("Unexpected end of iter")
 		}
 	}
 	for i := 0; i < n; i++ {
